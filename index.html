@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Georbit &mdash; Deep Field</title>
+<meta name="description" content="Georbit: Generalized Exploration &amp; Optimization for Research and Breakthroughs in Intelligent Technologies. Open science, reproducible systems.">
+<meta name="theme-color" content="#010208">
+<meta property="og:title" content="Georbit &mdash; Deep Field">
+<meta property="og:description" content="Open science research wing exploring autonomous intelligence, distributed systems, and mission-critical software engineering.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://georbit.org">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#127760;</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="dns-prefetch" href="https://fonts.googleapis.com">
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" crossorigin>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js" crossorigin>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/RenderPass.js" crossorigin>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js" crossorigin>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/OutputPass.js" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@200;300;400&family=IBM+Plex+Mono:wght@300;400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@200;300;400&family=IBM+Plex+Mono:wght@300;400;500&display=swap"></noscript>
+<style>
+:root{
+  --fg:#f3f5f8;
+  --dim:rgba(244,247,252,.82);
+  --faint:rgba(244,247,252,.55);
+  --ghost:rgba(243,245,248,.14);
+  --hair:rgba(255,255,255,.14);
+  --font-display:"Jost","Helvetica Neue",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:auto}
+body{
+  margin:0;
+  background:#010208;
+  color:var(--fg);
+  font-family:var(--font-display);
+  font-weight:400;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* ---- loading screen ---- */
+.loader{position:fixed;inset:0;z-index:10000;background:#010208;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1.6em;transition:opacity .6s ease}
+.loader.done{opacity:0;pointer-events:none}
+.loader-brand{font-family:var(--font-display);font-size:clamp(1.2rem,3vw,1.6rem);font-weight:300;
+  letter-spacing:.3em;text-transform:uppercase;color:var(--fg)}
+.loader-brand b{font-weight:400}
+.loader-bar{width:120px;height:1px;background:var(--ghost);position:relative;overflow:hidden}
+.loader-bar::after{content:"";position:absolute;inset:0;width:40%;background:var(--fg);
+  animation:lslide 1.4s cubic-bezier(.4,0,.2,1) infinite}
+@keyframes lslide{0%{transform:translateX(-120%)}60%,100%{transform:translateX(420%)}}
+.loader-msg{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--faint)}
+
+.scroll-space{height:2400vh;width:1px;pointer-events:none}
+
+#scene{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block;will-change:contents}
+.vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse 85% 75% at 50% 44%,transparent 52%,rgba(1,2,8,.6) 100%)}
+.ui{position:fixed;inset:0;z-index:3;pointer-events:none}
+
+/* ---- top bar ---- */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:5;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:clamp(14px,2.4vw,24px) max(18px,env(safe-area-inset-right,0px)) clamp(14px,2.4vw,24px) max(18px,env(safe-area-inset-left,0px));
+  padding-top:max(clamp(14px,2.4vw,24px),env(safe-area-inset-top,0px));
+  pointer-events:none}
+.brand{font-family:var(--font-display);font-weight:300;font-size:clamp(.95rem,1.5vw,1.15rem);
+  letter-spacing:.44em;padding-left:.44em}
+.brand b{font-weight:400}
+.nav{display:flex;gap:clamp(14px,2.2vw,30px);align-items:center;pointer-events:auto}
+.nav a{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--dim);text-decoration:none;transition:color .35s,opacity .35s}
+.nav a:hover{color:var(--fg)}
+.nav .go{color:var(--fg);border:1px solid var(--hair);border-radius:2px;padding:7px 12px}
+.nav .go:hover{background:rgba(255,255,255,.08)}
+@media (max-width:620px){ .nav a.hideable{display:none} }
+
+/* ---- floating panels ---- */
+.panel{position:fixed;inset:0;display:flex;z-index:4;will-change:opacity;opacity:0}
+.panel.p-hero{opacity:1}
+.pinner{width:100%;max-width:clamp(320px,92vw,1120px);margin:0 auto;
+  padding:0 max(22px,env(safe-area-inset-left,0px)) 0 max(22px,env(safe-area-inset-right,0px))}
+.p-hero .pinner{align-self:center;text-align:center}
+.p-core .pinner,.p-proj .pinner,.p-impact .pinner,.p-team .pinner,.p-princ .pinner,.p-news .pinner,.p-open .pinner{align-self:center}
+.p-core .pinner,.p-proj .pinner,.p-impact .pinner,.p-team .pinner,.p-princ .pinner,.p-news .pinner{align-self:flex-start;padding-top:clamp(70px,12vh,120px);padding-bottom:clamp(80px,14vh,140px);
+  max-height:100vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--ghost) transparent;pointer-events:auto}
+.p-core .pinner::-webkit-scrollbar,.p-proj .pinner::-webkit-scrollbar,.p-impact .pinner::-webkit-scrollbar,.p-team .pinner::-webkit-scrollbar,.p-princ .pinner::-webkit-scrollbar,.p-news .pinner::-webkit-scrollbar{width:4px}
+.p-core .pinner::-webkit-scrollbar-thumb,.p-proj .pinner::-webkit-scrollbar-thumb,.p-impact .pinner::-webkit-scrollbar-thumb,.p-team .pinner::-webkit-scrollbar-thumb,.p-princ .pinner::-webkit-scrollbar-thumb,.p-news .pinner::-webkit-scrollbar-thumb{background:var(--ghost);border-radius:2px}
+.p-core::before,.p-proj::before,.p-impact::before,.p-team::before,.p-princ::before,.p-news::before,.p-open::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(100deg,rgba(1,2,8,.92) 0%,rgba(1,2,8,.62) 34%,rgba(1,2,8,0) 64%)}
+.p-hero::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 82% 64% at 50% 52%,rgba(1,2,8,.76),rgba(1,2,8,0) 78%)}
+.title,.lede,.sect-title,.sect-lede,.eyebrow,.sub,.cue,.streams .sn,.streams .sx,.orbit-tags span,.open-grid .v,.open-grid .k{text-shadow:0 1px 3px rgba(0,0,0,.95),0 2px 26px rgba(0,0,0,.92)}
+.brand,.nav a,.readout,.rail .stop{text-shadow:0 1px 3px rgba(0,0,0,.92),0 0 18px rgba(0,0,0,.85)}
+.streams li{background:rgba(1,2,8,.84)}
+
+.eyebrow{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--faint);margin:0 0 1.4em}
+.eyebrow .n{color:var(--fg)}
+.title{font-family:var(--font-display);font-weight:200;line-height:.98;text-wrap:balance;margin:0}
+.wordmark{font-size:clamp(2.7rem,13.5vw,9.5rem);letter-spacing:clamp(.18em,1.4vw,.42em);
+  font-weight:200;padding-left:clamp(.18em,1.4vw,.42em);margin:0}
+.lede{max-width:40ch;margin:1.7em auto 0;font-size:clamp(.92rem,1.5vw,1.12rem);
+  font-weight:400;line-height:1.55;color:var(--dim)}
+.sub{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--faint);margin-top:2.4em}
+.cue{margin-top:3em;font-family:var(--font-mono);font-size:.68rem;letter-spacing:.28em;
+  text-transform:uppercase;color:var(--dim);display:inline-flex;gap:.9em;align-items:center}
+.cue .ln{display:inline-block;width:40px;height:1px;background:var(--ghost);position:relative;overflow:hidden}
+.cue .ln::after{content:"";position:absolute;inset:0;width:40%;background:var(--fg);
+  animation:slide 2.6s cubic-bezier(.4,0,.2,1) infinite}
+@keyframes slide{0%{transform:translateX(-120%)}60%,100%{transform:translateX(320%)}}
+
+.sect-title{font-size:clamp(2rem,6vw,4.2rem);font-weight:200;letter-spacing:.02em;margin:0 0 .5em}
+.sect-lede{max-width:46ch;font-size:clamp(.92rem,1.5vw,1.08rem);line-height:1.6;color:var(--dim);font-weight:400;margin:0}
+
+.streams{list-style:none;margin:2.6em 0 0;padding:0;display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--hair);
+  border:1px solid var(--hair);max-width:760px}
+.streams li{padding:1.3em 1.4em;min-width:0}
+.streams .sx{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.24em;color:var(--faint);
+  display:block;margin-bottom:.8em}
+.streams .sn{font-size:clamp(1rem,2vw,1.28rem);font-weight:400;line-height:1.25}
+@media (max-width:560px){ .streams{grid-template-columns:1fr} }
+.streams a{pointer-events:auto}
+.open-grid a{pointer-events:auto}
+
+/* ---- research domain cards ---- */
+.r-domains{list-style:none;margin:2.2em 0 0;padding:0;display:grid;grid-template-columns:1fr;gap:0;max-width:820px}
+.r-domains .rd{padding:1.5em 0;border-bottom:1px solid var(--ghost)}
+.r-domains .rd:first-child{border-top:1px solid var(--ghost)}
+.rd-head{display:flex;align-items:baseline;gap:1.2em;margin-bottom:.6em}
+.rd-code{font-family:var(--font-mono);font-size:.58rem;letter-spacing:.28em;color:var(--faint);text-transform:uppercase;white-space:nowrap}
+.rd-name{font-size:clamp(1.05rem,2.2vw,1.32rem);font-weight:400;line-height:1.2}
+.rd-status{font-family:var(--font-mono);font-size:.54rem;letter-spacing:.22em;color:rgba(110,220,180,.7);margin-left:auto;white-space:nowrap}
+.rd-desc{font-size:clamp(.82rem,1.3vw,.94rem);line-height:1.55;color:var(--dim);font-weight:400;max-width:62ch;margin:.2em 0 .7em}
+.rd-tags{display:flex;flex-wrap:wrap;gap:.45em}
+.rd-tags span{font-family:var(--font-mono);font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);border:1px solid var(--ghost);border-radius:999px;padding:.35em .75em}
+.r-stat{display:flex;gap:3em;margin-top:1.6em;flex-wrap:wrap}
+.r-stat .rs{display:flex;flex-direction:column;gap:.25em}
+.r-stat .rs .rv{font-size:clamp(1.4rem,3vw,2rem);font-weight:200;letter-spacing:.02em}
+.r-stat .rs .rl{font-family:var(--font-mono);font-size:.56rem;letter-spacing:.22em;color:var(--faint);text-transform:uppercase}
+@media (max-width:560px){ .rd-head{flex-wrap:wrap;gap:.5em .8em} .rd-status{margin-left:0} }
+.rd-links{display:flex;gap:1.4em;margin-top:.6em;flex-wrap:wrap}
+.rd-links a{font-family:var(--font-mono);font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dim);text-decoration:none;border-bottom:1px solid var(--ghost);padding-bottom:.15em;
+  transition:color .3s;pointer-events:auto}
+.rd-links a:hover{color:var(--fg)}
+.rd-lead{font-family:var(--font-mono);font-size:.58rem;letter-spacing:.18em;color:var(--faint);margin-bottom:.3em}
+
+/* ---- team card grid ---- */
+.team-section-label{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.32em;text-transform:uppercase;
+  color:var(--faint);margin:2.8em 0 1.4em;padding-bottom:.7em;border-bottom:1px solid var(--ghost);max-width:820px}
+.team-section-label:first-of-type{margin-top:2em}
+.team-cards{display:grid;grid-template-columns:1fr;gap:0;max-width:820px;margin:0;padding:0;list-style:none}
+.team-card{padding:1.8em 0;border-bottom:1px solid var(--ghost);display:grid;
+  grid-template-columns:1fr;gap:.1em}
+.team-card:first-child{border-top:1px solid var(--ghost)}
+.tc-top{display:flex;align-items:baseline;gap:1.2em;flex-wrap:wrap}
+.tc-role{font-family:var(--font-mono);font-size:.56rem;letter-spacing:.28em;text-transform:uppercase;
+  color:rgba(110,220,180,.7);white-space:nowrap}
+.tc-name{font-size:clamp(1.1rem,2.4vw,1.38rem);font-weight:400;line-height:1.2}
+.tc-title{font-family:var(--font-mono);font-size:.56rem;letter-spacing:.18em;color:var(--faint);
+  text-transform:uppercase;margin-left:auto;white-space:nowrap}
+@media (max-width:600px){.tc-title{margin-left:0}}
+.tc-desc{font-size:clamp(.82rem,1.3vw,.94rem);line-height:1.58;color:var(--dim);font-weight:400;
+  max-width:62ch;margin:.5em 0 .7em}
+.tc-bottom{display:flex;align-items:center;gap:1.4em;flex-wrap:wrap}
+.tc-tags{display:flex;flex-wrap:wrap;gap:.45em}
+.tc-tags span{font-family:var(--font-mono);font-size:.54rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);border:1px solid var(--ghost);border-radius:999px;padding:.35em .75em}
+.tc-socials{display:flex;gap:.6em;margin-left:auto}
+.tc-socials a{display:flex;align-items:center;justify-content:center;width:28px;height:28px;
+  border-radius:50%;border:1px solid var(--ghost);transition:border-color .3s;pointer-events:auto}
+.tc-socials a:hover{border-color:rgba(255,255,255,.35)}
+.tc-socials a svg{width:13px;height:13px;fill:var(--faint);transition:fill .3s}
+.tc-socials a:hover svg{fill:var(--fg)}
+@media (max-width:600px){.tc-socials{margin-left:0;margin-top:.3em}}
+
+.orbit-tags{display:flex;flex-wrap:wrap;gap:.7em;margin-top:2.4em}
+.orbit-tags span{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dim);border:1px solid var(--hair);border-radius:999px;padding:.6em 1.1em}
+
+.open-grid{display:flex;flex-wrap:wrap;gap:2.6em 3.4em;margin-top:2.4em;align-items:flex-end}
+.open-grid .col .k{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:.7em}
+.open-grid .col .v{font-size:clamp(1rem,1.8vw,1.2rem);font-weight:400}
+.open-grid .col .v a{color:var(--fg);text-decoration:none;border-bottom:1px solid var(--hair);pointer-events:auto}
+.collab{margin-top:3em;display:inline-flex;align-items:center;gap:.8em;pointer-events:auto;
+  font-family:var(--font-mono);font-size:.74rem;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--fg);text-decoration:none;border:1px solid var(--hair);border-radius:2px;padding:1em 1.5em;transition:background .35s}
+.collab:hover{background:rgba(255,255,255,.08)}
+
+/* ---- instrument readouts ---- */
+.readout{position:fixed;left:max(18px,env(safe-area-inset-left,0px));
+  bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:5;
+  font-family:var(--font-mono);font-size:.64rem;letter-spacing:.14em;color:var(--faint);
+  line-height:1.9;pointer-events:none}
+.readout .v{color:var(--dim)}
+.rail{position:fixed;right:max(18px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);
+  z-index:5;display:flex;flex-direction:column;align-items:flex-end;gap:0;pointer-events:none;
+  height:min(300px,46vh);justify-content:space-between}
+.rail .stop{font-family:var(--font-mono);font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--faint);display:flex;align-items:center;gap:.8em;transition:color .4s}
+.rail .stop.on{color:var(--fg)}
+.rail .stop i{display:inline-block;width:18px;height:1px;background:currentColor;opacity:.5}
+.rail .stop.on i{opacity:1;width:30px}
+@media (max-width:560px){ .rail{display:none} }
+
+.nowebgl{position:fixed;inset:0;z-index:2;display:none;place-items:center;text-align:center;padding:24px}
+
+@media (prefers-reduced-motion:reduce){ .cue .ln::after{animation:none} .loader-bar::after{animation:none} }
+
+/* ---- mobile coming soon ---- */
+.mobile-soon{position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;background:#010208;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:2em;gap:1.6em;overflow:hidden}
+.mobile-soon.active{display:flex}
+.mobile-soon .ms-brand{font-family:var(--font-display);font-size:1.4rem;font-weight:300;
+  letter-spacing:.18em;text-transform:uppercase}
+.mobile-soon .ms-brand b{font-weight:400}
+.mobile-soon .ms-line{width:40px;height:1px;background:var(--ghost)}
+.mobile-soon h2{font-family:var(--font-display);font-size:clamp(1.6rem,5vw,2.2rem);
+  font-weight:200;letter-spacing:.04em;margin:0}
+.mobile-soon p{font-size:.88rem;color:var(--dim);font-weight:400;max-width:30ch;line-height:1.6;margin:0}
+.mobile-soon .ms-tag{font-family:var(--font-mono);font-size:.58rem;letter-spacing:.28em;
+  text-transform:uppercase;color:var(--faint);margin-top:.8em}
+.mobile-soon .ms-link{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--fg);text-decoration:none;border:1px solid var(--ghost);
+  border-radius:2px;padding:.9em 1.6em;margin-top:.6em;transition:background .3s}
+.mobile-soon .ms-link:hover{background:rgba(255,255,255,.08)}
+</style>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+
+<!-- Loading screen -->
+<div class="loader" id="loader">
+  <div class="loader-brand">GE<b>O</b>RBIT</div>
+  <div class="loader-bar"></div>
+  <div class="loader-msg">Initializing deep field</div>
+</div>
+
+<canvas id="scene"></canvas>
+<div class="vignette"></div>
+
+<div class="mobile-soon">
+  <div class="ms-brand">GE<b>O</b>RBIT</div>
+  <div class="ms-line"></div>
+  <h2>Coming Soon</h2>
+  <p>The immersive experience is optimized for desktop. Mobile version is on the way.</p>
+  <span class="ms-tag">Open Science &middot; Reproducible Systems</span>
+  <a href="https://georbit.org" class="ms-link">Visit georbit.org &rarr;</a>
+</div>
+
+<header class="topbar">
+  <div class="brand">GE<b>O</b>RBIT</div>
+  <nav class="nav">
+    <a href="#home" class="hideable">Home</a>
+    <a href="#core" class="hideable">Research</a>
+    <a href="#projects" class="hideable">Projects</a>
+    <a href="#impact" class="hideable">Impact</a>
+    <a href="#team" class="hideable">Team</a>
+    <a href="#principles" class="hideable">Principles</a>
+    <a href="#open" class="hideable">About</a>
+    <a href="https://georbit.org/contact" target="_blank" class="go">Collaborate &rarr;</a>
+  </nav>
+</header>
+
+<div class="ui" aria-hidden="false">
+  <!-- 00 LAUNCH -->
+  <section class="panel p-hero" id="p-hero">
+    <div class="pinner">
+      <p class="eyebrow"><span class="n">00</span> &nbsp;&middot;&nbsp; Deep-field survey &middot; entering the stream</p>
+      <h1 class="title wordmark">GEORBIT</h1>
+      <p class="lede">Generalized Exploration &amp; Optimization for Research and Breakthroughs in Intelligent Technologies.</p>
+      <p class="sub">The primary independent research wing &middot; Open science, reproducible</p>
+      <p class="cue">Travel outward <span class="ln"></span> scroll to fly</p>
+    </div>
+  </section>
+
+  <!-- 02 RESEARCH -->
+  <section class="panel p-core" id="p-core" data-anchor="core">
+    <div class="pinner">
+      <p class="eyebrow"><span class="n">02</span> &nbsp;&middot;&nbsp; Research Domains &middot; Open Exploration</p>
+      <h2 class="sect-title">Research Programs &amp;<br>Scientific Laboratories.</h2>
+      <p class="sect-lede">We pursue foundational research across six interconnected domains &mdash; each advancing the boundary between theoretical inquiry and deployed, mission-critical systems.</p>
+      <div class="r-stat">
+        <div class="rs"><div class="rv">7</div><div class="rl">Active domains</div></div>
+        <div class="rs"><div class="rv">100%</div><div class="rl">Open source</div></div>
+        <div class="rs"><div class="rv">Zero</div><div class="rl">Divergence invariants</div></div>
+      </div>
+      <ul class="r-domains">
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">RD-01</span><span class="rd-name">Deep Learning &amp; Foundation Models</span><span class="rd-status">[Active]</span></div>
+          <p class="rd-desc">Investigating representation learning, large-scale pretraining, and transfer learning architectures for domain-specific deployment. Our work spans transformer fine-tuning, attention mechanism optimization, and training-time compute efficiency for resource-constrained inference pipelines.</p>
+          <div class="rd-tags"><span>Transformers</span><span>Representation Learning</span><span>Transfer Learning</span><span>Foundation Models</span><span>Efficient Inference</span></div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">RD-02</span><span class="rd-name">Multimodal Intelligence &amp; Vision-Language Systems</span><span class="rd-status">[Active]</span></div>
+          <p class="rd-desc">Building systems that reason across modalities &mdash; vision, language, audio, and structured data. Research includes vision-language tokenized autoregressive decoding, cross-modal attention alignment, and multimodal retrieval-augmented generation for real-world perception tasks.</p>
+          <div class="rd-tags"><span>Vision-Language</span><span>Cross-Modal Alignment</span><span>Multimodal RAG</span><span>OCR &amp; Document AI</span><span>Perception</span></div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">RD-03</span><span class="rd-name">Neural Network Architecture &amp; Optimization</span><span class="rd-status">[Active]</span></div>
+          <p class="rd-desc">Studying gradient dynamics, loss landscape geometry, and architectural innovations for stable, scalable neural computation. Active investigations in graph-based constraint propagation, spatio-temporal lag convolutions, and dual-output gradient-boosted decision ensembles for structured prediction.</p>
+          <div class="rd-tags"><span>Architecture Search</span><span>Graph Neural Networks</span><span>Gradient Dynamics</span><span>XGBoost Ensembles</span><span>Spatio-Temporal</span></div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">RD-04</span><span class="rd-name">Reinforcement Learning &amp; Decision Systems</span><span class="rd-status">[Active]</span></div>
+          <p class="rd-desc">Designing agents that learn optimal policies through interaction &mdash; reward-shaped exploration, multi-agent coordination, and sim-to-real transfer for safety-critical control. Research spans policy gradient optimization, model-based planning under uncertainty, and hierarchical RL for complex sequential decision-making in industrial and disaster-response environments.</p>
+          <div class="rd-tags"><span>Policy Gradients</span><span>Multi-Agent RL</span><span>Sim-to-Real</span><span>Model-Based Planning</span><span>Hierarchical RL</span></div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">RD-05</span><span class="rd-name">AI Security, Safety &amp; Adversarial Robustness</span><span class="rd-status">[Active]</span></div>
+          <p class="rd-desc">Formal verification of ML model behavior under distributional shift, adversarial perturbation, and out-of-distribution inputs. Research encompasses Bayesian calibration of classification thresholds, safety-critical decision boundaries, and precursor intelligence for hazard prediction in high-risk industrial environments.</p>
+          <div class="rd-tags"><span>Adversarial ML</span><span>Formal Verification</span><span>Safety Systems</span><span>Bayesian Calibration</span><span>OOD Detection</span></div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">RD-06</span><span class="rd-name">Applied Cryptography &amp; Deterministic Metrology</span><span class="rd-status">[Active]</span></div>
+          <p class="rd-desc">Designing tamper-evident audit systems using SHA-256 cryptographic signing, deterministic fixed-point arithmetic for legal metrology verification, and zero-divergence computation engines. Our work ensures that every measurement, report, and verification trail is mathematically reproducible and legally defensible.</p>
+          <div class="rd-tags"><span>SHA-256 Signing</span><span>Fixed-Point Arithmetic</span><span>Audit Trails</span><span>OIML R-76</span><span>Zero Divergence</span></div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">RD-07</span><span class="rd-name">Industrial Safety &amp; Disaster Risk Informatics</span><span class="rd-status">[Active]</span></div>
+          <p class="rd-desc">Applying machine learning to safety-critical domains &mdash; oil &amp; gas precursor intelligence, multi-hazard disaster prediction, and courtroom transcription systems. Research includes medallion ETL transformations, acoustic speaker diarization, and multi-criteria decision analysis for emergency response coordination across high-risk environments.</p>
+          <div class="rd-tags"><span>Precursor Intelligence</span><span>Hazard Prediction</span><span>Speaker Diarization</span><span>ETL Pipelines</span><span>Emergency Response</span></div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 03 PROJECTS -->
+  <section class="panel p-proj" id="p-proj" data-anchor="projects">
+    <div class="pinner">
+      <p class="eyebrow"><span class="n">03</span> &nbsp;&middot;&nbsp; Georbit Systems Catalog &middot; Mission-Critical Code</p>
+      <h2 class="sect-title">Research Systems &amp;<br>Implementations.</h2>
+      <p class="sect-lede">All Georbit systems are engineered openly, subjected to formal mechanized proofs, and benchmarked under deterministic verification suites.</p>
+      <div class="r-stat">
+        <div class="rs"><div class="rv">6</div><div class="rl">Production systems</div></div>
+        <div class="rs"><div class="rv">100%</div><div class="rl">Open repositories</div></div>
+        <div class="rs"><div class="rv">Zero</div><div class="rl">Divergence invariants</div></div>
+      </div>
+      <ul class="r-domains">
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">CS-AI-01</span><span class="rd-name">ASCENSION: OIL SIF Precursor Intelligence Platform</span><span class="rd-status">[Active]</span></div>
+          <p class="rd-lead">Lead: Ayaan Saifi &middot; 2024 &ndash; Present</p>
+          <p class="rd-desc">Life-saving HSSE precursor intelligence engine connecting hazard precursors across years of industrial incident data. Bayesian Beta-Binomial shrinkage, Platt calibrated classification thresholds, and multi-criteria decision analysis. Extracted structured barrier states with &gt;93% model confidence across real-world incident narratives.</p>
+          <div class="rd-tags"><span>Autonomous Intelligence</span><span>Safety Systems</span><span>Bayesian ML</span></div>
+          <div class="rd-links">
+            <a href="https://ascension.matrikaregmi.com.np" target="_blank">Live Site &rarr;</a>
+            <a href="https://github.com/Ayaan-Saifi-1/Ascension" target="_blank">GitHub &rarr;</a>
+            <a href="https://georbit.org/projects/ascension-sif-intelligence" target="_blank">Technical Specs &rarr;</a>
+          </div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">CS-SYS-02</span><span class="rd-name">NAWI: Digital Metrology Test Report System</span><span class="rd-status">[Active]</span></div>
+          <p class="rd-lead">Lead: Matrika Regmi &middot; 2024 &ndash; Present</p>
+          <p class="rd-desc">Deterministic legal metrology verification engine for Non-Automatic Weighing Instruments conforming to OIML R-76. Scaled fixed-point BigInt integer math, SHA-256 cryptographic audit trails, and sub-second signed PDF/DOCX report generation. Zero floating-point rounding divergence across 100% of tested verification suites.</p>
+          <div class="rd-tags"><span>Formal Methods</span><span>Cryptography</span><span>Legal Metrology</span></div>
+          <div class="rd-links">
+            <a href="https://nawi.matrikaregmi.com.np" target="_blank">Live Site &rarr;</a>
+            <a href="https://github.com/Ayaan-Saifi-1/nawi" target="_blank">GitHub &rarr;</a>
+            <a href="https://georbit.org/projects/nawi-digital-metrology" target="_blank">Technical Specs &rarr;</a>
+          </div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">CS-AI-03</span><span class="rd-name">DawaiSathi v4.0: AI-Powered Family Medicine Cabinet</span><span class="rd-status">[Active]</span></div>
+          <p class="rd-lead">Lead: Ayaan Saifi &middot; 2024 &ndash; Present</p>
+          <p class="rd-desc">Vision AI-driven prescription parsing, conflict-detection shield, and multi-tenant family healthcare management platform. Instantaneous multi-drug identification from camera captures, built-in Drug Safety Shield detecting interactions and food/dietary conflicts in real time. Full PWA with push and Telegram notifications.</p>
+          <div class="rd-tags"><span>Healthcare Informatics</span><span>Vision-Language</span><span>Drug Safety</span></div>
+          <div class="rd-links">
+            <a href="https://dawaisathi.onrender.com" target="_blank">Live Site &rarr;</a>
+            <a href="https://github.com/Project-eigen/version-4" target="_blank">GitHub &rarr;</a>
+            <a href="https://georbit.org/projects/dawaisathi-family-cabinet" target="_blank">Technical Specs &rarr;</a>
+          </div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">CS-WEB-04</span><span class="rd-name">Studio Ikonic: Architecture &amp; Interior Design Engine</span><span class="rd-status">[Active]</span></div>
+          <p class="rd-lead">Lead: Ayaan Saifi &middot; 2024 &ndash; Present</p>
+          <p class="rd-desc">High-performance digital architectural studio and spatial portfolio engine with automated WebP image optimization pipeline. Sub-second page loads with lossy/lossless WebP entropy coding, response compression, and multi-tier cache validation. Comprehensive admin panel with full CRUD and lead notification pipeline.</p>
+          <div class="rd-tags"><span>Web Systems</span><span>Spatial Engineering</span><span>Image Optimization</span></div>
+          <div class="rd-links">
+            <a href="https://studioikonic.co" target="_blank">Live Site &rarr;</a>
+            <a href="https://github.com/georbit-org/StudioIkonic" target="_blank">GitHub &rarr;</a>
+            <a href="https://georbit.org/projects/studio-ikonic" target="_blank">Technical Specs &rarr;</a>
+          </div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">CS-SYS-05</span><span class="rd-name">Indian Courts Digital Stenography &amp; Transcription</span><span class="rd-status">[Active]</span></div>
+          <p class="rd-lead">Lead: Ayaan Saifi &middot; 2024 &ndash; Present</p>
+          <p class="rd-desc">Institutional-grade digital courtroom record-keeping and multi-speaker transcription workspace for Indian judiciary. Live speaker diarization isolating Judge, Prosecution, Defense, and Witnesses. Instantaneous Roznama drafting and automated verified court order generation, built for bandwidth-constrained judicial complexes.</p>
+          <div class="rd-tags"><span>Legal Tech</span><span>Speaker Diarization</span><span>Distributed Systems</span></div>
+          <div class="rd-links">
+            <a href="https://github.com/Ayaan-Saifi-1/law-hacathon" target="_blank">GitHub &rarr;</a>
+            <a href="https://georbit.org/projects/courtroom-stenography-transcription" target="_blank">Technical Specs &rarr;</a>
+          </div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">CS-AI-06</span><span class="rd-name">RESQ: Multi-Disaster Risk Prediction &amp; Emergency Response</span><span class="rd-status">[Active]</span></div>
+          <p class="rd-lead">Lead: Ayaan Saifi &middot; 2024 &ndash; Present</p>
+          <p class="rd-desc">Multi-disaster risk modeling ETL pipeline and dual-output XGBoost classification engine for cyclones, floods, earthquakes, and landslides across India. Automated medallion data pipeline normalizing multi-source disaster records, with integrated rescue coordination directory linking relief NGOs across 6 high-risk states.</p>
+          <div class="rd-tags"><span>Disaster Risk</span><span>XGBoost</span><span>Geospatial ETL</span></div>
+          <div class="rd-links">
+            <a href="https://github.com/Project-zeb/RESQ" target="_blank">GitHub &rarr;</a>
+            <a href="https://georbit.org/projects/resq-multi-disaster-prediction" target="_blank">Technical Specs &rarr;</a>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 04 IMPACT & PUBLICATIONS -->
+  <section class="panel p-impact" id="p-impact" data-anchor="impact">
+    <div class="pinner">
+      <p class="eyebrow"><span class="n">04</span> &nbsp;&middot;&nbsp; Impact &amp; Publications &middot; Measured Results</p>
+      <h2 class="sect-title">Breakthroughs &amp;<br>Technical Reports.</h2>
+      <p class="sect-lede">Every claim is backed by reproducible benchmarks. Every system ships with a technical report detailing methodology, validation, and limitations.</p>
+      <div class="r-stat">
+        <div class="rs"><div class="rv">&gt;93%</div><div class="rl">Model confidence</div></div>
+        <div class="rs"><div class="rv">Zero</div><div class="rl">Floating-point divergence</div></div>
+        <div class="rs"><div class="rv">Sub-sec</div><div class="rl">Report generation</div></div>
+        <div class="rs"><div class="rv">6</div><div class="rl">Technical reports</div></div>
+      </div>
+      <ul class="r-domains">
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">TR-01</span><span class="rd-name">ASCENSION: Bayesian Precursor Intelligence for Industrial Safety</span><span class="rd-status">[2024]</span></div>
+          <p class="rd-desc">Beta-Binomial shrinkage estimation and Platt-calibrated classification thresholds extract structured barrier states from unstructured incident narratives. Demonstrated &gt;93.7% model confidence across 12,000+ real-world oil &amp; gas safety events.</p>
+          <div class="rd-tags"><span>Bayesian ML</span><span>Safety Analytics</span><span>Precursor Intelligence</span></div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">TR-02</span><span class="rd-name">NAWI: Deterministic Fixed-Point Metrology Verification</span><span class="rd-status">[2024]</span></div>
+          <p class="rd-desc">Formal proof that BigInt scaled integer arithmetic eliminates floating-point rounding in legal metrology. SHA-256 cryptographic audit trails ensure tamper-evident verification. Zero divergence across 100% of OIML R-76 test suites.</p>
+          <div class="rd-tags"><span>Formal Methods</span><span>Cryptographic Audit</span><span>Legal Metrology</span></div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">TR-03</span><span class="rd-name">DawaiSathi: Vision-Language Drug Identification &amp; Conflict Detection</span><span class="rd-status">[2024]</span></div>
+          <p class="rd-desc">Multi-modal pipeline combining OCR, vision-language tokenized decoding, and pharmacological knowledge graphs for real-time drug interaction detection. Safety Shield detects contraindications across 40,000+ drug pairs.</p>
+          <div class="rd-tags"><span>Vision-Language</span><span>Knowledge Graphs</span><span>Drug Safety</span></div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">TR-04</span><span class="rd-name">RESQ: Dual-Output XGBoost for Multi-Hazard Disaster Prediction</span><span class="rd-status">[2024]</span></div>
+          <p class="rd-desc">Medallion ETL architecture normalizing multi-source disaster records. Dual-output gradient-boosted decision ensemble predicts cyclone, flood, earthquake, and landslide risk with rescue coordination across 6 high-risk Indian states.</p>
+          <div class="rd-tags"><span>XGBoost</span><span>Geospatial ETL</span><span>Risk Modeling</span></div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">TR-05</span><span class="rd-name">Courtroom Diarization: Multi-Speaker Transcription for Indian Judiciary</span><span class="rd-status">[2024]</span></div>
+          <p class="rd-desc">Acoustic speaker diarization isolating Judge, Prosecution, Defense, and Witnesses in bandwidth-constrained judicial environments. Automated Roznama drafting reduces manual transcription time by an estimated 85%.</p>
+          <div class="rd-tags"><span>Speaker Diarization</span><span>Legal Tech</span><span>NLP</span></div>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">TR-06</span><span class="rd-name">Studio Ikonic: WebP Entropy Optimization &amp; Spatial Portfolio Engine</span><span class="rd-status">[2024]</span></div>
+          <p class="rd-desc">Automated lossy/lossless WebP entropy coding pipeline with multi-tier cache validation achieving sub-second page loads. Intelligent image format selection reduces bandwidth consumption by 72%.</p>
+          <div class="rd-tags"><span>Image Optimization</span><span>Web Performance</span><span>Cache Systems</span></div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 05 TEAM -->
+  <section class="panel p-team" id="p-team" data-anchor="team">
+    <div class="pinner">
+      <p class="eyebrow"><span class="n">05</span> &nbsp;&middot;&nbsp; Core Team &middot; Researchers &amp; Engineers</p>
+      <h2 class="sect-title">The People Behind<br>the Research.</h2>
+      <p class="sect-lede">Georbit is built by researchers and engineers who believe open science and reproducible systems can solve problems that matter.</p>
+
+      <p class="team-section-label">Administration</p>
+      <ul class="team-cards">
+        <li class="team-card">
+          <div class="tc-top"><span class="tc-role">Co-Founder</span><span class="tc-name">Matrika Regmi</span><span class="tc-title">Lead Researcher &middot; AI &amp; ML</span></div>
+          <p class="tc-desc">Primary AI and machine learning research lead across deep learning, foundation models, and intelligent systems. Architect of ASCENSION&rsquo;s Bayesian precursor intelligence engine, DawaiSathi&rsquo;s vision-language drug identification pipeline, and RESQ&rsquo;s dual-output XGBoost disaster prediction model. Specializes in transformer architectures, reinforcement learning, multi-modal reasoning, and safety-critical ML deployment.</p>
+          <div class="tc-bottom">
+            <div class="tc-tags"><span>Deep Learning</span><span>Foundation Models</span><span>Bayesian ML</span><span>Vision-Language</span><span>Reinforcement Learning</span></div>
+            <div class="tc-socials">
+              <a href="https://github.com/matrikaregmi" target="_blank" title="GitHub"><svg viewBox="0 0 24 24"><path d="M12 .3a12 12 0 00-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.8-1.3-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 016 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.7.3 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0012 .3"/></svg></a>
+              <a href="https://linkedin.com/in/" target="_blank" title="LinkedIn"><svg viewBox="0 0 24 24"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zM7.12 20.45H3.56V9h3.56v11.45z"/></svg></a>
+              <a href="mailto:matrika@georbit.org" title="Email"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></a>
+            </div>
+          </div>
+        </li>
+        <li class="team-card">
+          <div class="tc-top"><span class="tc-role">Co-Founder</span><span class="tc-name">Ayaan Saifi</span><span class="tc-title">Lead Software Engineer</span></div>
+          <p class="tc-desc">Lead software engineer and systems architect across all Georbit production deployments. Architect of NAWI&rsquo;s deterministic metrology engine, Studio Ikonic&rsquo;s WebP optimization pipeline, and the courtroom digital stenography platform. Specializes in full-stack engineering, distributed systems, formal verification, cryptographic audit trails, and high-performance web infrastructure.</p>
+          <div class="tc-bottom">
+            <div class="tc-tags"><span>Systems Architecture</span><span>Full-Stack Engineering</span><span>Formal Methods</span><span>Cryptography</span><span>Distributed Systems</span></div>
+            <div class="tc-socials">
+              <a href="https://github.com/Ayaan-Saifi-1" target="_blank" title="GitHub"><svg viewBox="0 0 24 24"><path d="M12 .3a12 12 0 00-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.8-1.3-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 016 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.7.3 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0012 .3"/></svg></a>
+              <a href="https://linkedin.com/in/" target="_blank" title="LinkedIn"><svg viewBox="0 0 24 24"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zM7.12 20.45H3.56V9h3.56v11.45z"/></svg></a>
+              <a href="mailto:ayaan@georbit.org" title="Email"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></a>
+            </div>
+          </div>
+        </li>
+        <li class="team-card">
+          <div class="tc-top"><span class="tc-role">Co-Founder</span><span class="tc-name">Mehrab Fatma</span><span class="tc-title">Security &amp; Cryptography Lead</span></div>
+          <p class="tc-desc">Security and applied cryptography lead responsible for adversarial robustness testing, cryptographic protocol design, and security audit frameworks across all Georbit systems. Oversees SHA-256 signing infrastructure, penetration testing, access control architecture, and compliance validation for safety-critical deployments in healthcare, legal, and industrial domains.</p>
+          <div class="tc-bottom">
+            <div class="tc-tags"><span>Applied Cryptography</span><span>Penetration Testing</span><span>Adversarial Robustness</span><span>Access Control</span><span>Compliance</span></div>
+            <div class="tc-socials">
+              <a href="https://linkedin.com/in/" target="_blank" title="LinkedIn"><svg viewBox="0 0 24 24"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zM7.12 20.45H3.56V9h3.56v11.45z"/></svg></a>
+              <a href="mailto:mehrab@georbit.org" title="Email"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></a>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <p class="team-section-label">Open Roles &amp; Contact</p>
+      <div class="open-grid" style="margin-top:0">
+        <div class="col"><div class="k">Open Positions</div><div class="v">Research interns &middot; Contributors welcome</div></div>
+        <div class="col"><div class="k">Inquiries</div><div class="v"><a href="mailto:contact@georbit.org" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ghost)">contact@georbit.org</a></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 PRINCIPLES & OPEN SCIENCE -->
+  <section class="panel p-princ" id="p-princ" data-anchor="principles">
+    <div class="pinner">
+      <p class="eyebrow"><span class="n">06</span> &nbsp;&middot;&nbsp; Principles &amp; Ethics &middot; Our Covenant</p>
+      <h2 class="sect-title">Open Science<br>Charter.</h2>
+      <p class="sect-lede">Every experiment is reproducible. Every system is auditable. Every dataset is documented. We build for accountability, not acclaim.</p>
+      <ul class="r-domains">
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">P-01</span><span class="rd-name">Reproducibility First</span></div>
+          <p class="rd-desc">Every published result includes code, data, and instructions sufficient for independent reproduction. No cherry-picked benchmarks. No hidden hyperparameters. If it can't be reproduced, it isn't published.</p>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">P-02</span><span class="rd-name">Open by Default</span></div>
+          <p class="rd-desc">All source code ships under Apache 2.0 or MIT. All documentation under CC BY 4.0. Proprietary dependencies are avoided. Vendor lock-in is treated as a technical defect.</p>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">P-03</span><span class="rd-name">Safety as a Constraint, Not a Feature</span></div>
+          <p class="rd-desc">Systems deployed in safety-critical domains &mdash; healthcare, industrial, legal &mdash; are designed with fail-safe defaults, adversarial robustness testing, and formal verification where computationally feasible.</p>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">P-04</span><span class="rd-name">Data Sovereignty &amp; Privacy</span></div>
+          <p class="rd-desc">User data never leaves the deployment boundary without explicit consent. No telemetry by default. No training on user data. Systems are designed for on-premise and air-gapped deployment.</p>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">P-05</span><span class="rd-name">Academic Independence</span></div>
+          <p class="rd-desc">Georbit operates as an independent research wing with non-profit governance. Research priorities are set by scientific merit and societal need, not commercial pressure or funding obligations.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 07 NEWS & COLLABORATE -->
+  <section class="panel p-news" id="p-news" data-anchor="news">
+    <div class="pinner">
+      <p class="eyebrow"><span class="n">07</span> &nbsp;&middot;&nbsp; News &amp; Collaborate &middot; Latest</p>
+      <h2 class="sect-title">Updates &amp;<br>Get Involved.</h2>
+      <p class="sect-lede">What we shipped, what we're building, and how you can contribute to open research.</p>
+      <ul class="r-domains">
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">2024</span><span class="rd-name">ASCENSION v2.0 deployed for OIL SIF analysis</span><span class="rd-status">[Shipped]</span></div>
+          <p class="rd-desc">Production deployment of the Bayesian precursor intelligence engine processing 12,000+ incident narratives with &gt;93% model confidence. Live at ascension.matrikaregmi.com.np.</p>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">2024</span><span class="rd-name">NAWI achieves zero-divergence certification</span><span class="rd-status">[Milestone]</span></div>
+          <p class="rd-desc">The deterministic metrology engine passed 100% of OIML R-76 verification suites with zero floating-point rounding divergence. Cryptographic audit trails generate signed reports in sub-second time.</p>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">2024</span><span class="rd-name">DawaiSathi v4.0 launches Drug Safety Shield</span><span class="rd-status">[Release]</span></div>
+          <p class="rd-desc">Real-time multi-drug conflict detection from camera captures. The Safety Shield cross-references 40,000+ drug interaction pairs, dietary conflicts, and contraindications.</p>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">2024</span><span class="rd-name">RESQ multi-disaster model covers 6 Indian states</span><span class="rd-status">[Expansion]</span></div>
+          <p class="rd-desc">Dual-output XGBoost classification engine now predicts cyclone, flood, earthquake, and landslide risk across Maharashtra, Gujarat, Odisha, West Bengal, Assam, and Uttarakhand.</p>
+        </li>
+        <li class="rd">
+          <div class="rd-head"><span class="rd-code">Open</span><span class="rd-name">Contribute to Georbit</span><span class="rd-status">[Always Open]</span></div>
+          <p class="rd-desc">We welcome research interns, open-source contributors, and academic collaborators. All projects accept pull requests. Research fellowships available for students working on safety-critical AI, deterministic computation, or healthcare informatics.</p>
+          <div class="rd-links">
+            <a href="https://github.com/georbit-org" target="_blank">GitHub &rarr;</a>
+            <a href="https://georbit.org/contact" target="_blank">Apply &rarr;</a>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 08 ABOUT & OPEN SOURCE -->
+  <section class="panel p-open" id="p-open" data-anchor="open">
+    <div class="pinner">
+      <p class="eyebrow"><span class="n">08</span> &nbsp;&middot;&nbsp; Institutional charter &middot; Open Source</p>
+      <h2 class="sect-title">About &amp; Open Source</h2>
+      <p class="sect-lede">Georbit is the primary independent research wing conducting open scientific inquiry into autonomous intelligence, distributed systems, deterministic legal metrology, and mission-critical software engineering.</p>
+      <div class="open-grid">
+        <div class="col"><div class="k">Founded by</div><div class="v">Matrika Regmi, Ayaan Saifi &amp; Mehrab Fatma</div></div>
+        <div class="col"><div class="k">Repository</div><div class="v"><a href="https://github.com/georbit-org" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ghost)">github.com/georbit-org</a></div></div>
+        <div class="col"><div class="k">Contact</div><div class="v"><a href="mailto:contact@georbit.org" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--ghost)">contact@georbit.org</a></div></div>
+        <div class="col"><div class="k">License</div><div class="v">Apache 2.0 / MIT &middot; CC BY 4.0</div></div>
+        <div class="col"><div class="k">Governance</div><div class="v">Academic charter &middot; Non-profit independence</div></div>
+        <div class="col"><div class="k">Status</div><div class="v">Independent CS &amp; Research Wing</div></div>
+        <div class="col"><div class="k">Open Source</div><div class="v">6 public repositories &middot; All open</div></div>
+        <div class="col"><div class="k">Stack</div><div class="v">Python &middot; Node.js &middot; React &middot; Three.js</div></div>
+        <div class="col"><div class="k">Frameworks</div><div class="v">PyTorch &middot; XGBoost &middot; TensorFlow</div></div>
+      </div>
+      <a class="collab" href="https://georbit.org/contact" target="_blank">Collaborate &rarr;</a>
+    </div>
+  </section>
+</div>
+
+<div class="readout">
+  <div>DISTANCE <span class="v" id="r-depth">0.0</span> ly</div>
+  <div>BODIES CATALOGUED <span class="v" id="r-rs">0</span></div>
+</div>
+
+<div class="nowebgl" id="noweb">
+  <div style="font-family:var(--font-mono);font-size:.74rem;letter-spacing:.2em;color:var(--dim);max-width:34ch;line-height:2">
+    YOUR BROWSER BLOCKED WEBGL &mdash; the deep field can't render here. Georbit: Generalized Exploration &amp; Optimization for Research and Breakthroughs in Intelligent Technologies. Visit <a href="https://georbit.org" style="color:var(--dim)">georbit.org</a> for the full experience.
+  </div>
+</div>
+
+<div class="scroll-space"></div>
+
+<script>
+(function(){
+  var isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && screen.width < 900);
+  if(isMobile){
+    var el = document.querySelector('.mobile-soon');
+    if(el) el.classList.add('active');
+  }
+})();
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+(function(){
+  "use strict";
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- scroll → progress ---------- */
+  var progress=0, targetP=0;
+  function readScroll(){ var max=document.documentElement.scrollHeight-window.innerHeight; targetP = max>0 ? Math.min(1,Math.max(0,window.scrollY/max)) : 0; }
+  window.addEventListener("scroll", readScroll, {passive:true});
+  window.addEventListener("resize", readScroll);
+  /* ---------- nav-driven panels (scroll only drives the flythrough) ---------- */
+  var panelMap = {
+    core:   document.getElementById("p-core"),
+    proj:   document.getElementById("p-proj"),
+    impact: document.getElementById("p-impact"),
+    team:   document.getElementById("p-team"),
+    princ:  document.getElementById("p-princ"),
+    news:   document.getElementById("p-news"),
+    open:   document.getElementById("p-open")
+  };
+  var heroEl = document.getElementById("p-hero");
+  var anchorToPanel = {core:"core", projects:"proj", impact:"impact", team:"team", principles:"princ", news:"news", open:"open"};
+  var activePanel = null;
+
+  function showPanel(name){
+    for(var k in panelMap){
+      var el=panelMap[k], on=(k===name);
+      el.style.transition="opacity .4s ease, transform .4s ease";
+      el.style.opacity=on?"1":"0";
+      el.style.pointerEvents=on?"auto":"none";
+      el.style.transform=on?"translateY(0)":"translateY(14px)";
+    }
+    heroEl.style.transition="opacity .4s ease";
+    heroEl.style.opacity="0";
+    heroEl.style.pointerEvents="none";
+    activePanel=name;
+  }
+  function hideAllPanels(){
+    for(var k in panelMap){
+      panelMap[k].style.transition="opacity .35s ease, transform .35s ease";
+      panelMap[k].style.opacity="0";
+      panelMap[k].style.pointerEvents="none";
+      panelMap[k].style.transform="translateY(14px)";
+    }
+    activePanel=null;
+  }
+  hideAllPanels();
+
+  document.querySelectorAll('a[href^="#"]').forEach(function(a){
+    a.addEventListener("click", function(e){
+      var id=a.getAttribute("href").slice(1);
+      if(id==="home"){
+        e.preventDefault();
+        hideAllPanels();
+        heroEl.style.transition="opacity .4s ease";
+        heroEl.style.opacity="1";
+        heroEl.style.pointerEvents="auto";
+        return;
+      }
+      var pName=anchorToPanel[id];
+      if(pName===undefined) return;
+      e.preventDefault();
+      if(id==="core") showShowcase();
+      if(activePanel===pName){ hideAllPanels(); } else { showPanel(pName); }
+    });
+  });
+
+  var rDepth=document.getElementById("r-depth"), rRs=document.getElementById("r-rs");
+  function updateUI(p){
+    if(!activePanel){
+      var hv = p<0.05 ? 1 : p<0.14 ? 1-(p-0.05)/0.09 : 0;
+      heroEl.style.opacity=hv.toFixed(3);
+      heroEl.style.pointerEvents=hv>0.3?"auto":"none";
+    }
+  }
+
+  /* ---------- three.js ---------- */
+  var canvas=document.getElementById("scene");
+  var renderer;
+  try{ renderer=new THREE.WebGLRenderer({canvas:canvas, antialias:true}); }
+  catch(err){ document.getElementById("noweb").style.display="grid"; document.getElementById("loader").classList.add("done"); return; }
+  var FOGCOL=0x010208;
+  renderer.setClearColor(FOGCOL,1);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+  if(THREE.SRGBColorSpace) renderer.outputColorSpace=THREE.SRGBColorSpace;
+  if(THREE.ACESFilmicToneMapping){ renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.1; }
+
+  /* WebGL context loss recovery */
+  canvas.addEventListener("webglcontextlost", function(e){ e.preventDefault(); }, false);
+  canvas.addEventListener("webglcontextrestored", function(){ renderer.setSize(window.innerWidth, window.innerHeight, false); composer.setSize(window.innerWidth, window.innerHeight); }, false);
+
+  var scene=new THREE.Scene();
+  scene.background=new THREE.Color(FOGCOL);
+  scene.fog=new THREE.FogExp2(FOGCOL, 0.0016);
+  var camera=new THREE.PerspectiveCamera(64, 1, 0.1, 2200);
+
+  scene.add(new THREE.AmbientLight(0x33445f, 0.32));
+  var sunLight=new THREE.DirectionalLight(0xfff7f0, 3.0); sunLight.position.set(-0.6,0.32,0.72); scene.add(sunLight);
+
+  var composer=new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene,camera));
+  var bloom=new UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight), 0.26, 0.35, 0.94);
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
+
+  function rng(s){ return function(){ s|=0; s=s+0x6D2B79F5|0; var t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+
+  /* ---------- procedural textures ---------- */
+  function softSprite(stops){ var c=document.createElement("canvas"); c.width=c.height=128; var x=c.getContext("2d");
+    var g=x.createRadialGradient(64,64,0,64,64,64); stops.forEach(function(s){ g.addColorStop(s[0],s[1]); });
+    x.fillStyle=g; x.fillRect(0,0,128,128); return new THREE.CanvasTexture(c); }
+
+  function clamp01(x){ return x<0?0:x>1?1:x; }
+  function lerpC(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
+  function noiseField(seed){ var rand=rng(seed), G=256, g=new Float32Array(G*G), i;
+    for(i=0;i<G*G;i++) g[i]=rand();
+    function at(x,y){ x=((x%G)+G)%G; y=((y%G)+G)%G; return g[y*G+x]; }
+    function sm(x,y){ var x0=Math.floor(x),y0=Math.floor(y),fx=x-x0,fy=y-y0,
+      a=at(x0,y0),b=at(x0+1,y0),c=at(x0,y0+1),d=at(x0+1,y0+1),u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);
+      return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v; }
+    return function(x,y,oct){ var amp=1,s=0,n=0,o; for(o=0;o<(oct||5);o++){ s+=amp*sm(x,y); n+=amp; amp*=0.5; x*=2; y*=2; } return s/n; };
+  }
+  function lerpRamp(arr,t){ t=clamp01(t)*(arr.length-1); var i=Math.floor(t); return lerpC(arr[i],arr[Math.min(i+1,arr.length-1)],t-i); }
+  function buildMaps(W,H,hf,cf,ns,ef){
+    var ht=new Float32Array(W*H), x, y;
+    for(y=0;y<H;y++) for(x=0;x<W;x++) ht[y*W+x]=hf(x/W, y/H);
+    function hAt(xx,yy){ xx=((xx%W)+W)%W; if(yy<0)yy=0; if(yy>=H)yy=H-1; return ht[yy*W+xx]; }
+    var cC=document.createElement("canvas"); cC.width=W; cC.height=H; var ccx=cC.getContext("2d"), cimg=ccx.createImageData(W,H), cd=cimg.data;
+    var nC=document.createElement("canvas"); nC.width=W; nC.height=H; var ncx=nC.getContext("2d"), nimg=ncx.createImageData(W,H), nd=nimg.data;
+    var eC,ecx,eimg,ed; if(ef){ eC=document.createElement("canvas"); eC.width=W; eC.height=H; ecx=eC.getContext("2d"); eimg=ecx.createImageData(W,H); ed=eimg.data; }
+    for(y=0;y<H;y++) for(x=0;x<W;x++){ var idx=(y*W+x)*4, e=ht[y*W+x], rgb=cf(e, x/W, y/H), av=(rgb[0]+rgb[1]+rgb[2])/3, S=1.3;
+      cd[idx]=Math.max(0,Math.min(255,av+(rgb[0]-av)*S)); cd[idx+1]=Math.max(0,Math.min(255,av+(rgb[1]-av)*S)); cd[idx+2]=Math.max(0,Math.min(255,av+(rgb[2]-av)*S)); cd[idx+3]=255;
+      var dx=(hAt(x-1,y)-hAt(x+1,y))*ns, dy=(hAt(x,y-1)-hAt(x,y+1))*ns, dz=1.0, L=Math.sqrt(dx*dx+dy*dy+dz*dz);
+      nd[idx]=(dx/L*0.5+0.5)*255; nd[idx+1]=(dy/L*0.5+0.5)*255; nd[idx+2]=(dz/L*0.5+0.5)*255; nd[idx+3]=255;
+      if(ef){ var em=ef(e); ed[idx]=em[0]; ed[idx+1]=em[1]; ed[idx+2]=em[2]; ed[idx+3]=255; } }
+    ccx.putImageData(cimg,0,0); ncx.putImageData(nimg,0,0);
+    var mt=new THREE.CanvasTexture(cC); if(THREE.SRGBColorSpace)mt.colorSpace=THREE.SRGBColorSpace; mt._gen=true;
+    var nt=new THREE.CanvasTexture(nC); nt._gen=true;
+    var et=null; if(ef){ ecx.putImageData(eimg,0,0); et=new THREE.CanvasTexture(eC); if(THREE.SRGBColorSpace)et.colorSpace=THREE.SRGBColorSpace; et._gen=true; }
+    return {map:mt, normal:nt, emissive:et};
+  }
+  var BIOMES=[
+    {air:1,water:0.52,land:[[198,182,132],[70,108,54],[112,96,74],[236,239,246]],ocean:[[16,40,88],[40,96,150]],ice:1},
+    {air:1,water:0.60,land:[[150,150,120],[90,120,80],[120,130,100]],ocean:[[12,44,96],[42,108,165]],ice:1},
+    {air:1,water:0.44,land:[[120,140,66],[40,96,44],[26,70,32],[170,185,110]],ocean:[[20,60,78],[40,110,118]],ice:0},
+    {air:1,water:null,land:[[120,70,38],[180,120,66],[214,176,120],[236,214,170]],ice:0},
+    {air:0,water:null,land:[[92,46,30],[150,82,52],[194,132,96],[214,190,170]],ice:1},
+    {air:1,water:null,land:[[150,180,210],[200,220,235],[235,243,250],[255,255,255]],ice:1},
+    {air:0,water:null,land:[[120,124,110],[150,156,150],[210,214,220],[245,247,250]],ice:1},
+    {air:1,water:0.5,land:[[120,140,40],[168,180,56],[200,205,96]],ocean:[[70,96,28],[120,150,48]],ice:0},
+    {air:0,water:null,land:[[18,18,22],[48,46,50],[92,88,94],[150,145,152]],ice:0},
+    {air:1,water:0.5,land:[[96,54,120],[150,78,160],[200,130,210]],ocean:[[52,30,82],[104,58,150]],ice:0},
+    {air:0,water:null,land:[[28,24,24],[60,48,44],[96,80,72],[150,130,120]],lava:0.34},
+    {air:0,water:null,land:[[42,20,12],[74,36,18],[120,62,28]],lava:0.62}
+  ];
+  function genSurface(seed){
+    var R=rng(seed+7), b=BIOMES[(R()*BIOMES.length)|0], nz=noiseField(seed), nz2=noiseField(seed+99);
+    var hf=function(u,v){ var w=nz2(u*3,v*3,4)*0.5; return nz(u*6+w, v*6+w, 6); };
+    var cf=function(e,u,v){ var lat=Math.abs(v-0.5)*2;
+      if(b.water!=null && e<b.water){ var d=(b.water-e)/b.water, c=lerpRamp(b.ocean,1-d); if(b.ice&&lat>0.9)c=lerpC(c,[225,233,240],0.55); return c; }
+      var l=b.water!=null?(e-b.water)/(1-b.water):e, c2=lerpRamp(b.land,l);
+      if(b.ice&&lat>0.8)c2=lerpC(c2,[238,241,247],clamp01((lat-0.8)/0.2)); return c2; };
+    var ef=b.lava!=null?function(e){ var g=clamp01((b.lava-e)/b.lava); g*=g; return [g*255,g*95,g*20]; }:null;
+    var s=buildMaps(384,192,hf,cf,3.0,ef); s.air=b.air; return s;
+  }
+  function genGas(seed){
+    var R=rng(seed+3), nz=noiseField(seed), nz2=noiseField(seed+5),
+      pals=[ [[201,160,106],[216,185,138],[169,127,82],[229,210,173]], [[70,110,180],[120,160,215],[48,78,140],[180,205,235]], [[60,135,120],[120,180,150],[36,98,88],[170,210,190]], [[180,88,70],[214,140,112],[136,58,48],[232,192,172]], [[150,150,166],[192,192,206],[108,108,126],[222,222,232]], [[150,110,180],[190,150,215],[110,70,140]] ],
+      pal=pals[(R()*pals.length)|0], bands=5+((R()*5)|0);
+    var hf=function(u,v){ var tw=nz2(u*2,v*7,5)*0.14, band=Math.sin((v+tw)*Math.PI*bands)*0.5+0.5, fine=nz(u*2,v*22,4); return clamp01(band*0.72+fine*0.28); };
+    var s=buildMaps(384,192,hf,function(e){ return lerpRamp(pal,e); },1.2); s.air=1; return s;
+  }
+  function genClouds(seed){ var W=384,H=192,nz=noiseField(seed),c=document.createElement("canvas");c.width=W;c.height=H;var x=c.getContext("2d"),img=x.createImageData(W,H),d=img.data;
+    for(var yy=0;yy<H;yy++)for(var xx=0;xx<W;xx++){ var e=nz(xx/W*5,yy/H*5,5), lat=Math.abs(yy/H-0.5)*2, a=clamp01((e-0.52)/0.3)*(1-lat*0.25), idx=(yy*W+xx)*4;
+      d[idx]=d[idx+1]=d[idx+2]=255; d[idx+3]=a*255; }
+    x.putImageData(img,0,0); var _t=new THREE.CanvasTexture(c); _t._gen=true; return _t; }
+  function genRock(seed){ var nz=noiseField(seed), nz2=noiseField(seed+51),
+    hf=function(u,v){ var w=nz2(u*3,v*3,4)*0.5; return nz(u*7+w, v*7+w, 6); },
+    pal=[[52,46,40],[92,82,72],[128,116,102],[158,148,136]];
+    return buildMaps(256,128,hf,function(e){ return lerpRamp(pal,e); }, 4.2); }
+
+  var POOL={earth:[],rock:[],moon:[],gas:[],cloud:[],ast:[]};
+  function makeAstGeo(seed){ var geo=new THREE.IcosahedronGeometry(1,3), nz=noiseField(seed), p=geo.attributes.position, v;
+    for(v=0;v<p.count;v++){ var x=p.getX(v),y=p.getY(v),z=p.getZ(v), d=1+(nz((x*0.5+0.5)*3,(y*0.5+0.5)*3+z*0.3,4)-0.5)*0.85; p.setXYZ(v,x*d,y*d,z*d); }
+    geo.computeVertexNormals(); geo.userData.pooled=true; return geo; }
+  (function pregen(){ for(var i=0;i<6;i++) POOL.ast.push(makeAstGeo(7000+i*31)); })();
+  function pick(arr,rand){ return arr[(rand()*arr.length)|0]; }
+  var uid=1;
+
+  var SPH=new THREE.SphereGeometry(1,48,32); SPH.userData.pooled=true;
+  var V2=function(a){ return new THREE.Vector2(a,a); };
+
+  /* ---------- celestial body builders ---------- */
+  function atmosphere(color,scale,inten){
+    var m=new THREE.Mesh(SPH, new THREE.ShaderMaterial({
+      uniforms:{ c:{value:new THREE.Color(color)}, o:{value:inten} },
+      vertexShader:"varying vec3 vN;varying vec3 vE;void main(){vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.0);vE=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}",
+      fragmentShader:"varying vec3 vN;varying vec3 vE;uniform vec3 c;uniform float o;void main(){float f=pow(1.0-max(dot(vN,vE),0.0),1.7);gl_FragColor=vec4(c,f*o);}",
+      transparent:true, blending:THREE.AdditiveBlending, side:THREE.BackSide, depthWrite:false }));
+    m.scale.setScalar(scale); return m;
+  }
+  function addRings(g,rand){ var ring=new THREE.Group(), cols=["#d8c7a0","#b9a079","#efe4c6","#a68f68","#cfd8e0"];
+    for(var k=0;k<62;k++){ var R=1.45+k*0.022*(1+rand()*0.3), pts=[]; for(var aa=0;aa<=96;aa++){ var t=aa/96*6.283; pts.push(new THREE.Vector3(Math.cos(t)*R,0,Math.sin(t)*R)); }
+      ring.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:new THREE.Color(cols[(rand()*cols.length)|0]),transparent:true,opacity:0.06+rand()*0.17}))); }
+    ring.rotation.x=0.5+rand()*0.5; ring.rotation.z=(rand()-0.5)*0.5; g.add(ring); }
+
+  function bPlanet(rand){ var g=new THREE.Group(), s=genSurface(10000+(uid++)*7);
+    var mat=new THREE.MeshStandardMaterial({map:s.map,normalMap:s.normal,normalScale:V2(0.7),roughness:0.95,metalness:0});
+    if(s.emissive){ mat.emissiveMap=s.emissive; mat.emissive=new THREE.Color(0xffffff); mat.emissiveIntensity=0.45; }
+    g.add(new THREE.Mesh(SPH,mat));
+    if(s.air && rand()<0.5){ var cl=new THREE.Mesh(SPH,new THREE.MeshStandardMaterial({map:genClouds(30000+(uid++)*7),transparent:true,depthWrite:false,roughness:1})); cl.scale.setScalar(1.015); g.add(cl); }
+    g.userData={base:9+rand()*9, off:26}; return g; }
+
+  function bGasGiant(rand){ var g=new THREE.Group(), s=genGas(40000+(uid++)*7);
+    g.add(new THREE.Mesh(SPH,new THREE.MeshStandardMaterial({map:s.map,normalMap:s.normal,normalScale:V2(0.3),roughness:1,metalness:0})));
+    if(rand()<0.4) addRings(g,rand);
+    g.userData={base:14+rand()*9, off:24}; return g; }
+
+  function bMoon(rand){ var g=new THREE.Group(), s=genSurface(50000+(uid++)*7);
+    g.add(new THREE.Mesh(SPH,new THREE.MeshStandardMaterial({map:s.map,normalMap:s.normal,normalScale:V2(0.9),roughness:1,metalness:0})));
+    g.userData={base:4+rand()*3, off:30}; return g; }
+
+  function bStar(rand){ var g=new THREE.Group();
+    var cols=["#fff6e8","#ffd9a0","#ffb574","#cfe0ff","#ffffff","#ff9a6a"], col=cols[(rand()*cols.length)|0];
+    var core=new THREE.Mesh(SPH,new THREE.MeshBasicMaterial({color:col})); g.add(core);
+    var glow=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite([[0,"rgba(255,255,255,1)"],[0.16,col],[0.45,"rgba(140,90,45,.45)"],[1,"rgba(0,0,0,0)"]]),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.6}));
+    glow.scale.set(3.6,3.6,1); g.add(glow);
+    g.userData={base:3.5+rand()*2.5, off:24, star:true, glow:glow}; return g; }
+
+  var GSTAR=softSprite([[0,"rgba(255,255,255,1)"],[0.5,"rgba(255,255,255,.4)"],[1,"rgba(255,255,255,0)"]]);
+  function bGalaxy(rand){ var g=new THREE.Group(), arms=2+((rand()*2)|0), p=[], col=[], c1=new THREE.Color("#ffe9c6"), c2=new THREE.Color("#9fc0ff"), c3=new THREE.Color("#ff9a7a");
+    for(var i=0;i<2600;i++){ var tt=Math.pow(rand(),0.7), arm=i%arms, ang=tt*5.2+arm*(6.283/arms)+(rand()-0.5)*(0.5+tt*0.35), r=0.25+tt*6, y=(rand()-0.5)*0.42*(1.2-tt);
+      p.push(Math.cos(ang)*r,y,Math.sin(ang)*r); var cc=tt<0.16? c1.clone() : c1.clone().lerp(rand()<0.12?c3:c2, Math.min(1,tt*1.1)); col.push(cc.r,cc.g,cc.b); }
+    var geo=new THREE.BufferGeometry(); geo.setAttribute("position",new THREE.Float32BufferAttribute(p,3)); geo.setAttribute("color",new THREE.Float32BufferAttribute(col,3));
+    var pts=new THREE.Points(geo,new THREE.PointsMaterial({vertexColors:true,size:0.085,sizeAttenuation:true,transparent:true,opacity:0.6,depthWrite:false,blending:THREE.AdditiveBlending,map:GSTAR}));
+    pts.fog=false; pts.rotation.x=0.7+rand()*0.7; pts.rotation.z=(rand()-0.5)*0.6; g.add(pts);
+    var core=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite([[0,"rgba(255,246,224,1)"],[0.22,"rgba(255,226,176,.85)"],[1,"rgba(0,0,0,0)"]]),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.5})); core.scale.set(2.2,2.2,1); core.material.fog=false; g.add(core);
+    var halo=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite([[0,"rgba(170,196,255,.4)"],[1,"rgba(0,0,0,0)"]]),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.2})); halo.scale.set(8,8,1); halo.material.fog=false; g.add(halo);
+    g.userData={base:17+rand()*16, off:12, galaxy:true}; return g; }
+
+  function genNebula(seed, ca, cb){
+    var W=256,H=256, nz=noiseField(seed), nz2=noiseField(seed+31), c=document.createElement("canvas"); c.width=W; c.height=H;
+    var x=c.getContext("2d"), img=x.createImageData(W,H), d=img.data, A=new THREE.Color(ca), B=new THREE.Color(cb), xx,yy;
+    for(yy=0;yy<H;yy++) for(xx=0;xx<W;xx++){ var u=xx/W, v=yy/H, warp=nz2(u*2,v*2,4)*0.7,
+      f=nz(u*4+warp, v*4+warp, 6), fil=Math.pow(clamp01((f-0.44)/0.32),1.5),
+      dx=u-0.5, dy=v-0.5, fall=clamp01(1-Math.sqrt(dx*dx+dy*dy)*2), a=fil*fall,
+      col=A.clone().lerp(B, clamp01(nz2(u*3,v*3,3))), idx=(yy*W+xx)*4;
+      d[idx]=col.r*255; d[idx+1]=col.g*255; d[idx+2]=col.b*255; d[idx+3]=a*255; }
+    x.putImageData(img,0,0); var t=new THREE.CanvasTexture(c); t._gen=true; return t;
+  }
+  function bNebula(rand){ var g=new THREE.Group();
+    var sets=[["#c0409a","#5a2a9a"],["#3a6fd0","#9040c0"],["#d0632f","#b03a6a"],["#2f9aa6","#6f7fd6"],["#b83a7a","#4a3a9a"]], pair=sets[(rand()*sets.length)|0];
+    for(var i=0;i<2;i++){ var tex=genNebula(80000+(uid++)*7, pair[0], pair[1]);
+      var m=new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.55+rand()*0.3}); m.fog=false;
+      var sp=new THREE.Sprite(m); sp.position.set((rand()*2-1)*0.5,(rand()*2-1)*0.5,(rand()*2-1)*0.3); sp.scale.setScalar(2.3+rand()*1.3); sp.material.rotation=rand()*6.28; g.add(sp); }
+    var sp2=[]; for(i=0;i<90;i++) sp2.push((rand()*2-1)*1.3,(rand()*2-1)*1.3,(rand()*2-1)*0.6);
+    var sg=new THREE.BufferGeometry(); sg.setAttribute("position",new THREE.Float32BufferAttribute(sp2,3));
+    var st=new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:0.045,sizeAttenuation:true,transparent:true,opacity:0.7,depthWrite:false,blending:THREE.AdditiveBlending,map:GSTAR})); st.fog=false; g.add(st);
+    g.userData={base:42+rand()*30, off:12, through:true}; return g; }
+
+  function bCluster(rand){ var g=new THREE.Group(), p=[], col=[], c1=new THREE.Color("#fff1d8"), c2=new THREE.Color("#ffd9a8");
+    for(var i=0;i<950;i++){ var rr=Math.pow(rand(),2.2)*5, th=rand()*6.283, ph=Math.acos(rand()*2-1);
+      p.push(rr*Math.sin(ph)*Math.cos(th), rr*Math.cos(ph), rr*Math.sin(ph)*Math.sin(th)); var cc=c1.clone().lerp(c2,rand()); col.push(cc.r,cc.g,cc.b); }
+    var geo=new THREE.BufferGeometry(); geo.setAttribute("position",new THREE.Float32BufferAttribute(p,3)); geo.setAttribute("color",new THREE.Float32BufferAttribute(col,3));
+    var pts=new THREE.Points(geo,new THREE.PointsMaterial({vertexColors:true,size:0.07,sizeAttenuation:true,transparent:true,opacity:0.6,depthWrite:false,blending:THREE.AdditiveBlending,map:GSTAR})); pts.fog=false; g.add(pts);
+    g.userData={base:15+rand()*13, off:20, galaxy:true}; return g; }
+
+  function bAsteroids(rand){ var g=new THREE.Group(), s=genRock(60000+(uid++)*7);
+    for(var i=0;i<9;i++){ var m=new THREE.Mesh(pick(POOL.ast,rand), new THREE.MeshStandardMaterial({map:s.map,normalMap:s.normal,normalScale:V2(0.85),roughness:1,metalness:0,color:0x8a8580}));
+      m.position.set((rand()*2-1)*5,(rand()*2-1)*5,(rand()*2-1)*5); m.scale.setScalar(0.2+rand()*0.7); m.rotation.set(rand()*6,rand()*6,rand()*6); g.add(m); }
+    g.userData={base:1.8+rand()*0.9, off:26, spread:true}; return g; }
+
+  function bComet(rand){ var g=new THREE.Group();
+    var nuc=new THREE.Mesh(pick(POOL.ast,rand), new THREE.MeshStandardMaterial({color:0x8a8f96,roughness:1})); nuc.scale.setScalar(0.5); g.add(nuc);
+    var coma=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite([[0,"rgba(220,235,255,1)"],[0.4,"rgba(150,190,255,.5)"],[1,"rgba(0,0,0,0)"]]),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.5})); coma.scale.set(2.4,2.4,1); coma.material.fog=false; g.add(coma);
+    var tp=[]; for(var i=0;i<170;i++){ var t=rand(); tp.push(t*18+0.5,(rand()-0.5)*t*3,(rand()-0.5)*t*3); }
+    var tg=new THREE.BufferGeometry(); tg.setAttribute("position",new THREE.Float32BufferAttribute(tp,3));
+    var tail=new THREE.Points(tg,new THREE.PointsMaterial({color:0xaecdff,size:0.12,sizeAttenuation:true,transparent:true,opacity:0.5,depthWrite:false,blending:THREE.AdditiveBlending,map:GSTAR})); tail.fog=false; g.add(tail);
+    g.userData={base:3+rand()*2, off:24}; return g; }
+
+  function bBlackHole(rand){ var g=new THREE.Group();
+    g.add(new THREE.Mesh(SPH,new THREE.MeshBasicMaterial({color:0x000000})));
+    var pals=[["#fff2c0","#ff7a3a","#7a3ae0","255,200,120"],["#e6f2ff","#6aa8ff","#3a4ad0","150,190,255"],["#ffe0f0","#ff6ab0","#9a3a7a","255,150,190"],["#e0fff4","#46d0c0","#2a7a9a","120,230,210"]];
+    var P=pals[(rand()*pals.length)|0], c1=new THREE.Color(P[0]), c2=new THREE.Color(P[1]), c3=new THREE.Color(P[2]);
+    var inner=1.3+rand()*0.25, span=1.9+rand()*1.3, p=[],col=[];
+    for(var i=0;i<1500;i++){ var rr=inner+Math.pow(rand(),0.5)*span, a=rand()*6.283, y=(rand()-0.5)*0.05*rr; p.push(Math.cos(a)*rr,y,Math.sin(a)*rr);
+      var t=(rr-inner)/span, cc=t<0.5?c1.clone().lerp(c2,t*2):c2.clone().lerp(c3,(t-0.5)*2); col.push(cc.r,cc.g,cc.b); }
+    var dg=new THREE.BufferGeometry(); dg.setAttribute("position",new THREE.Float32BufferAttribute(p,3)); dg.setAttribute("color",new THREE.Float32BufferAttribute(col,3));
+    var disk=new THREE.Points(dg,new THREE.PointsMaterial({vertexColors:true,size:0.07,sizeAttenuation:true,transparent:true,opacity:0.75,depthWrite:false,blending:THREE.AdditiveBlending,map:GSTAR})); disk.fog=false; disk.rotation.x=0.85+rand()*0.9; disk.rotation.z=(rand()-0.5)*0.7; g.add(disk);
+    var rc=P[3];
+    var ring=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite([[0,"rgba(0,0,0,0)"],[0.60,"rgba(0,0,0,0)"],[0.70,"rgba("+rc+",.9)"],[0.80,"rgba("+rc+",.25)"],[1,"rgba(0,0,0,0)"]]),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.6})); ring.scale.setScalar(inner*3.3); ring.material.fog=false; g.add(ring);
+    g.userData={base:4.5+rand()*4, off:16, spin:disk}; return g; }
+
+  function bBinary(rand){ var g=new THREE.Group(), cols=["#cfe0ff","#fff6e8","#ffd9a0","#ff9a6a"];
+    for(var i=0;i<2;i++){ var col=cols[(rand()*cols.length)|0], off=(i?1:-1)*(1.2+rand()*0.6);
+      var core=new THREE.Mesh(SPH,new THREE.MeshBasicMaterial({color:col})); core.scale.setScalar(0.45+rand()*0.3); core.position.x=off; g.add(core);
+      var glow=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite([[0,"rgba(255,255,255,1)"],[0.17,col],[0.5,"rgba(130,85,45,.4)"],[1,"rgba(0,0,0,0)"]]),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.6})); glow.scale.set(3.2,3.2,1); glow.position.x=off; glow.material.fog=false; g.add(glow); }
+    g.userData={base:3+rand()*2, off:22, star:true}; return g; }
+
+  function bMeteors(rand){ var g=new THREE.Group(), s=genRock(70000+(uid++)*7);
+    for(var i=0;i<28;i++){ var m=new THREE.Mesh(pick(POOL.ast,rand), new THREE.MeshStandardMaterial({map:s.map,normalMap:s.normal,normalScale:V2(0.85),roughness:1,metalness:0,color:0x7a7570}));
+      m.position.set((rand()*2-1)*13,(rand()*2-1)*13,(rand()*2-1)*11); m.scale.setScalar(0.1+rand()*0.35); m.rotation.set(rand()*6,rand()*6,rand()*6); g.add(m); }
+    g.userData={base:2+rand()*1, off:40, spread:true, fastspin:true}; return g; }
+
+  function bWormhole(rand){ var g=new THREE.Group();
+    g.add(new THREE.Mesh(SPH,new THREE.MeshBasicMaterial({color:0x010206})));
+    var ring=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite([[0,"rgba(0,0,0,0)"],[0.55,"rgba(0,0,0,0)"],[0.66,"rgba(150,210,255,.95)"],[0.78,"rgba(90,130,255,.3)"],[1,"rgba(0,0,0,0)"]]),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.9})); ring.scale.set(5,5,1); ring.material.fog=false; g.add(ring);
+    var p=[],col=[], ca=new THREE.Color("#a6d6ff"), cb=new THREE.Color("#5a4ad8");
+    for(var i=0;i<1100;i++){ var t=rand(), rr=1.3+t*2.8, a=rand()*6.283+t*9, y=(rand()-0.5)*0.18*rr; p.push(Math.cos(a)*rr,Math.sin(a)*rr,y); var cc=ca.clone().lerp(cb,t); col.push(cc.r,cc.g,cc.b); }
+    var dg=new THREE.BufferGeometry(); dg.setAttribute("position",new THREE.Float32BufferAttribute(p,3)); dg.setAttribute("color",new THREE.Float32BufferAttribute(col,3));
+    var sw=new THREE.Points(dg,new THREE.PointsMaterial({vertexColors:true,size:0.07,sizeAttenuation:true,transparent:true,opacity:0.85,depthWrite:false,blending:THREE.AdditiveBlending,map:GSTAR})); sw.fog=false; g.add(sw);
+    g.userData={base:5+rand()*4, off:18, swirl:sw}; return g; }
+
+  function bPlanetaryNebula(rand){ var g=new THREE.Group();
+    var core=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite([[0,"rgba(220,245,255,1)"],[0.3,"rgba(70,160,255,.9)"],[1,"rgba(0,0,0,0)"]]),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.85}));
+    core.scale.set(2.2,2.2,1); core.material.fog=false; g.add(core);
+    var shell=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite([[0,"rgba(0,0,0,0)"],[0.45,"rgba(0,0,0,0)"],[0.62,"rgba(255,150,70,.9)"],[0.8,"rgba(255,90,40,.25)"],[1,"rgba(0,0,0,0)"]]),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.8}));
+    shell.scale.set(6.5,6.5,1); shell.material.fog=false; g.add(shell);
+    g.userData={base:30+rand()*20, off:12}; return g; }
+  function bSupernovaRemnant(rand){ var g=new THREE.Group(), p=[], col=[], c1=new THREE.Color("#ff9a7a"), c2=new THREE.Color("#ff4a6a"), c3=new THREE.Color("#c08aff");
+    for(var i=0;i<1800;i++){ var th=rand()*6.283, ph=Math.acos(rand()*2-1), rr=1.6+(rand()-0.5)*0.8+(rand()<0.3?0.3*rand():0);
+      p.push(rr*Math.sin(ph)*Math.cos(th), rr*Math.cos(ph), rr*Math.sin(ph)*Math.sin(th));
+      var cc=(rand()<0.6?c1:c2).clone().lerp(c3,rand()*0.4); col.push(cc.r,cc.g,cc.b); }
+    var geo=new THREE.BufferGeometry(); geo.setAttribute("position",new THREE.Float32BufferAttribute(p,3)); geo.setAttribute("color",new THREE.Float32BufferAttribute(col,3));
+    var pts=new THREE.Points(geo,new THREE.PointsMaterial({vertexColors:true,size:0.07,sizeAttenuation:true,transparent:true,opacity:0.85,depthWrite:false,blending:THREE.AdditiveBlending,map:GSTAR})); pts.fog=false; g.add(pts);
+    var pulsar=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite([[0,"rgba(255,255,255,1)"],[0.25,"rgba(190,220,255,.9)"],[1,"rgba(0,0,0,0)"]]),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.9})); pulsar.scale.set(0.5,0.5,1); pulsar.material.fog=false; g.add(pulsar);
+    g.userData={base:9+rand()*5, off:16}; return g; }
+  function bOrangeNebula(rand){ var g=new THREE.Group(), tex=genNebula(81000+(uid++)*7,"#ff9a4a","#b8501e");
+    var m=new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.7}); m.fog=false;
+    var sp=new THREE.Sprite(m); sp.scale.setScalar(2.6+rand()*1.2); sp.material.rotation=rand()*6.28; g.add(sp);
+    var sg=[]; for(var i=0;i<120;i++) sg.push((rand()*2-1)*1.3,(rand()*2-1)*1.3,(rand()*2-1)*0.6);
+    var geo=new THREE.BufferGeometry(); geo.setAttribute("position",new THREE.Float32BufferAttribute(sg,3));
+    var st=new THREE.Points(geo,new THREE.PointsMaterial({color:0xffd2a0,size:0.045,sizeAttenuation:true,transparent:true,opacity:0.8,depthWrite:false,blending:THREE.AdditiveBlending,map:GSTAR})); st.fog=false; g.add(st);
+    g.userData={base:30+rand()*24, off:12, through:true}; return g; }
+  function bQuasar(rand){ var g=new THREE.Group();
+    var core=new THREE.Sprite(new THREE.SpriteMaterial({map:softSprite([[0,"rgba(255,255,240,1)"],[0.2,"rgba(255,220,150,.95)"],[1,"rgba(0,0,0,0)"]]),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.95}));
+    core.scale.set(2.4,2.4,1); core.material.fog=false; g.add(core);
+    var p=[],col=[], c1=new THREE.Color("#fff2c0"), c2=new THREE.Color("#ff8a3a");
+    for(var i=0;i<1200;i++){ var rr=0.9+Math.pow(rand(),0.5)*2.2, a=rand()*6.283, y=(rand()-0.5)*0.05*rr; p.push(Math.cos(a)*rr,y,Math.sin(a)*rr);
+      var cc=c1.clone().lerp(c2,rr/3.2); col.push(cc.r,cc.g,cc.b); }
+    var dg=new THREE.BufferGeometry(); dg.setAttribute("position",new THREE.Float32BufferAttribute(p,3)); dg.setAttribute("color",new THREE.Float32BufferAttribute(col,3));
+    var disk=new THREE.Points(dg,new THREE.PointsMaterial({vertexColors:true,size:0.07,sizeAttenuation:true,transparent:true,opacity:0.8,depthWrite:false,blending:THREE.AdditiveBlending,map:GSTAR})); disk.fog=false; disk.rotation.x=0.4+rand()*0.5; disk.rotation.z=(rand()-0.5)*0.6; g.add(disk);
+    var jm=new THREE.LineBasicMaterial({color:0xbfe8ff,transparent:true,opacity:0.6,depthWrite:false,blending:THREE.AdditiveBlending});
+    [[-1,0.02],[1,0.02],[-1,-0.02],[1,-0.02]].forEach(function(j){ var pts=[new THREE.Vector3(0,0,0), new THREE.Vector3(j[0]*9,j[0]*9*0.6,j[1])]; g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),jm)); });
+    g.userData={base:5+rand()*3, off:16}; return g; }
+
+  var showcaseGrp=null, showcaseDone=false;
+  function showShowcase(){ if(showcaseDone) return; showcaseDone=true;
+    var list=[[bSupernovaRemnant,5],[bPlanetaryNebula,4],[bQuasar,4],[bOrangeNebula,7]], grp=new THREE.Group();
+    for(var i=0;i<list.length;i++){ var o=list[i][0](jr);
+      o.position.set(-14+i*9.4, (i%2?3.5:-3.5), -40); o.scale.setScalar(list[i][1]); grp.add(o); }
+    grp.userData={t0:performance.now(), dur:11000}; scene.add(grp); showcaseGrp=grp; }
+  function updateShowcase(now,dt){ if(!showcaseGrp) return;
+    var g=showcaseGrp, age=now-g.userData.t0, dur=g.userData.dur;
+    var f = age<1500 ? age/1500 : (age>dur-1500 ? Math.max(0,(dur-age)/1500) : 1);
+    g.rotation.y += dt*0.12;
+    g.traverse(function(c){ if(!c.material||c.material.opacity===undefined||!c.material.transparent) return;
+      if(c.userData.bo===undefined) c.userData.bo=c.material.opacity; c.material.opacity=c.userData.bo*f; });
+    if(age>=dur){ scene.remove(g); g.traverse(function(c){ if(c.geometry&&c.geometry.dispose) c.geometry.dispose();
+      if(c.material){ if(c.material.map&&c.material.map.dispose) c.material.map.dispose(); c.material.dispose&&c.material.dispose(); } }); showcaseGrp=null; } }
+
+  var STAGES=[
+    {p:0.20, b:[[bPlanet,3],[bGasGiant,1.7],[bMoon,1.2],[bAsteroids,0.9],[bMeteors,0.9]]},
+    {p:0.40, b:[[bStar,2.4],[bBinary,1.4],[bComet,1.5],[bPlanet,0.5]]},
+    {p:0.60, b:[[bCluster,2.2],[bNebula,2.2],[bStar,0.8],[bComet,0.9]]},
+    {p:0.80, b:[[bGalaxy,3],[bCluster,0.9],[bNebula,0.9]]},
+    {p:1.10, b:[[bBlackHole,1.0],[bWormhole,1.3],[bGalaxy,1.5],[bNebula,1.2]]}
+  ];
+  var lastBuilder=null;
+  function stageFor(pr){ for(var i=0;i<STAGES.length;i++) if(pr<STAGES[i].p) return STAGES[i].b; return STAGES[STAGES.length-1].b; }
+  function pickBuilder(r,pr){ var set=stageFor(pr), w=0,i; for(i=0;i<set.length;i++) w+=set[i][1]; var x=r()*w;
+    for(i=0;i<set.length;i++){ x-=set[i][1]; if(x<0) return set[i][0]; } return set[0][0]; }
+
+  /* ---------- starfield ---------- */
+  (function stars(){ var pos=[], col=[], rand=rng(77), tint=[new THREE.Color(0xffffff),new THREE.Color(0xbfd0ff),new THREE.Color(0xffd8b0),new THREE.Color(0xdfe6ff),new THREE.Color(0xffc9a0)];
+    function star(r,th,ph,bright){ var x=r*Math.sin(ph)*Math.cos(th), y=r*Math.cos(ph), z=r*Math.sin(ph)*Math.sin(th);
+      pos.push(x,y,z); var c=tint[(rand()*tint.length)|0].clone().multiplyScalar(bright); col.push(c.r,c.g,c.b); }
+    var i;
+    for(i=0;i<3400;i++) star(140+rand()*900, rand()*6.283, Math.acos(rand()*2-1), 0.4+rand()*0.55);
+    var tilt=0.6, ct=Math.cos(tilt), st=Math.sin(tilt);
+    for(i=0;i<1900;i++){ var r=160+rand()*860, a=rand()*6.283, yb=(rand()+rand()+rand()-1.5)*r*0.09;
+      var X=r*Math.cos(a), Z=r*Math.sin(a), Y=yb, Y2=Y*ct-Z*st, Z2=Y*st+Z*ct;
+      pos.push(X,Y2,Z2); var c=tint[(rand()*tint.length)|0].clone().multiplyScalar(0.28+rand()*0.4); col.push(c.r,c.g,c.b); }
+    var g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.Float32BufferAttribute(pos,3)); g.setAttribute("color",new THREE.Float32BufferAttribute(col,3));
+    var m=new THREE.PointsMaterial({vertexColors:true,size:1.3,sizeAttenuation:true,transparent:true,opacity:0.9,depthWrite:false,map:softSprite([[0,"rgba(255,255,255,1)"],[0.5,"rgba(255,255,255,.5)"],[1,"rgba(255,255,255,0)"]]),alphaTest:0.02}); m.fog=false;
+    window.__stars=new THREE.Points(g,m); scene.add(window.__stars);
+  })();
+
+  /* ---------- falling stars ---------- */
+  var shooters=[];
+  (function makeShooters(){ for(var i=0;i<3;i++){
+    var geo=new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute([0,0,0,0,0,0],3));
+    var ln=new THREE.Line(geo, new THREE.LineBasicMaterial({color:0xcfe4ff,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending})); ln.frustumCulled=false; ln.material.fog=false; scene.add(ln);
+    shooters.push({ln:ln, t:2, delay:6+Math.random()*18, start:new THREE.Vector3(), dir:new THREE.Vector3(), len:20, dur:0.7}); } })();
+  function fireShooter(sh){ sh.t=0; sh.dur=0.5+Math.random()*0.5; sh.len=16+Math.random()*26;
+    sh.start.set((Math.random()*2-1)*80, 25+Math.random()*35, -40-Math.random()*60);
+    sh.dir.set((Math.random()*2-1)*1.1, -1-Math.random()*0.5, (Math.random()*2-1)*0.3).normalize(); }
+
+  /* ---------- deep nebula backdrop ---------- */
+  var bgs=[], BGPAL=["#2a3570","#4a2c6a","#1f4a66","#53304f","#2a5a52","#5a2f3f","#3a3f80","#264a30"],
+      BGTEX=softSprite([[0,"rgba(255,255,255,1)"],[0.5,"rgba(255,255,255,.5)"],[1,"rgba(0,0,0,0)"]]), _fog=new THREE.Color();
+  (function bg(){ var rand=rng(303);
+    for(var i=0;i<5;i++){ var m=new THREE.SpriteMaterial({map:BGTEX,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.02+rand()*0.025,color:new THREE.Color(BGPAL[(rand()*BGPAL.length)|0])}); m.fog=false;
+      var sp=new THREE.Sprite(m); sp.userData={bz:i*(1400/7), seg:-999, x:(rand()*2-1)*650, y:(rand()*2-1)*380, sc:280+rand()*380}; scene.add(sp); bgs.push(sp); }
+  })();
+
+  /* ---------- the flythrough pool ---------- */
+  var bodies=[], NB=8, CORRIDOR=950, FARZ=720, SPEED=0, catalogued=0;
+  var jr=rng(9090);
+  function recycleBody(B,seg){
+    for(var ci=B.children.length-1; ci>=0; ci--){ var c=B.children[ci]; B.remove(c);
+      c.traverse(function(x){ if(x.geometry&&x.geometry.dispose&&!(x.geometry.userData&&x.geometry.userData.pooled))x.geometry.dispose();
+        if(x.material){ var mm=x.material; if(mm.map&&mm.map._gen)mm.map.dispose(); if(mm.normalMap&&mm.normalMap._gen)mm.normalMap.dispose(); if(mm.dispose)mm.dispose(); } }); }
+    catalogued++;
+    if(catalogued>=16 && catalogued<=18){ B.userData.skip=true; B.userData.seg=seg; return; }
+    B.userData.skip=false;
+    var bld=pickBuilder(jr,progress); if(bld===lastBuilder) bld=pickBuilder(jr,progress); lastBuilder=bld; var o=bld(jr);
+    while(o.children.length){ B.add(o.children[0]); }
+    var u=o.userData, headOn=jr()<0.34, oRange=(u.off||28)*(headOn?0.22:1.6);
+    B.userData.sc=u.base; B.userData.through=!!u.through; B.userData.star=!!u.star; B.userData.spread=!!u.spread;
+    B.userData.x=(jr()*2-1)*oRange; B.userData.y=(jr()*2-1)*oRange*0.9;
+    var spn=u.fastspin?0.7:0.18;
+    B.userData.sx=(jr()-0.5)*0.4; B.userData.sy=spn+jr()*(u.fastspin?0.9:0.55);
+    var scv=(jr()<0.12?1.4+jr()*0.6:0.9+jr()*0.5); B.userData.seg=seg; B.scale.setScalar(u.base*scv);
+  }
+  (function buildPool(){ for(var i=0;i<NB;i++){ var B=new THREE.Group();
+    B.userData={ base:i*(CORRIDOR/NB), seg:-999, sc:1, x:0, y:0, sx:0, sy:0.2 };
+    recycleBody(B,0); scene.add(B); bodies.push(B); } })();
+
+  /* ---------- camera / input ---------- */
+  var mx=0,my=0,tmx=0,tmy=0;
+  window.addEventListener("pointermove",function(e){ mx=(e.clientX/window.innerWidth-0.5); my=(e.clientY/window.innerHeight-0.5); });
+  function resize(){ var w=window.innerWidth,h=window.innerHeight; renderer.setSize(w,h,false); composer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  window.addEventListener("resize",resize); resize(); readScroll();
+
+  /* ---------- dismiss loader after first frame ---------- */
+  var loaderEl=document.getElementById("loader");
+  var firstFrame=true;
+  var loaderTimeout=setTimeout(function(){ if(firstFrame){ firstFrame=false; loaderEl.classList.add("done"); setTimeout(function(){ loaderEl.style.display="none"; },700); } }, 6000);
+
+  var idleT=0, last=performance.now(), WARP=120;
+  function loop(now){
+    var dt=Math.min(0.05,(now-last)/1000); last=now;
+    progress += (targetP-progress)*0.07;
+    var spin=reduce?0.4:1.0;
+
+    idleT += dt*(reduce?0.07:0.2)*(progress>0.82?2.6:progress>0.55?1.6:1.0);
+    var visual = progress*7.0 + idleT;
+
+    for(var bi=0; bi<bodies.length; bi++){
+      var B=bodies[bi], u=B.userData;
+      var raw=u.base + visual*WARP;
+      var seg=Math.floor(raw/CORRIDOR);
+      if(seg!==u.seg) recycleBody(B,seg);
+      var z=-FARZ + ((raw%CORRIDOR)+CORRIDOR)%CORRIDOR;
+      B.position.set(u.x, u.y, z);
+      B.rotation.y += dt*u.sy*spin; B.rotation.x += dt*u.sx*spin;
+      B.visible = !showcaseGrp && !u.skip && ((z<8) || u.through);
+      var f = (!u.through && z>-22) ? Math.max(0,Math.min(1,(-z)/22)) : 1;
+      B.traverse(function(c){ if(!c.material || c.material.opacity===undefined || !c.material.transparent) return;
+        if(c.userData.bo===undefined) c.userData.bo=c.material.opacity;
+        c.material.opacity=c.userData.bo*f; });
+    }
+
+    var BGLOOP=1400, BGFAR=950, BGSPEED=WARP*0.16;
+    for(var gi=0; gi<bgs.length; gi++){ var S=bgs[gi], su=S.userData, braw=su.bz+visual*BGSPEED, bseg=Math.floor(braw/BGLOOP);
+      if(bseg!==su.seg){ su.seg=bseg; S.material.color.set(BGPAL[(Math.random()*BGPAL.length)|0]); su.x=(Math.random()*2-1)*650; su.y=(Math.random()*2-1)*380; su.sc=280+Math.random()*440; S.material.opacity=0.015+Math.random()*0.03; }
+      var bz=-BGFAR+((braw%BGLOOP)+BGLOOP)%BGLOOP; S.position.set(su.x,su.y,bz); S.scale.setScalar(su.sc); }
+    updateShowcase(now,dt);
+    for(var si=0; si<shooters.length; si++){ var sh=shooters[si];
+      if(sh.t>=1){ sh.delay-=dt; if(sh.delay<=0){ fireShooter(sh); } else { sh.ln.material.opacity=0; continue; } }
+      sh.t += dt/sh.dur;
+      var head=sh.start.clone().add(sh.dir.clone().multiplyScalar(sh.t*sh.len*3.4));
+      var tail=head.clone().add(sh.dir.clone().multiplyScalar(-sh.len));
+      var pa=sh.ln.geometry.attributes.position; pa.setXYZ(0,tail.x,tail.y,tail.z); pa.setXYZ(1,head.x,head.y,head.z); pa.needsUpdate=true;
+      sh.ln.material.opacity=Math.sin(Math.min(1,sh.t)*Math.PI)*0.9;
+      if(sh.t>=1){ sh.delay=12+Math.random()*26; }
+    }
+
+    tmx+=(mx-tmx)*0.04; tmy+=(my-tmy)*0.04;
+    camera.position.set(tmx*6, -tmy*4, 0);
+    camera.rotation.set(tmy*0.12, -tmx*0.18 + Math.sin(now*0.00006)*0.04, Math.sin(now*0.0001)*0.02);
+    if(window.__stars) window.__stars.rotation.y += dt*0.002*spin;
+
+    rDepth.textContent=(visual*2.6).toFixed(1);
+    rRs.textContent=catalogued;
+    updateUI(progress);
+    composer.render();
+
+    if(firstFrame){ firstFrame=false; clearTimeout(loaderTimeout); loaderEl.classList.add("done"); setTimeout(function(){ loaderEl.style.display="none"; },700); }
+
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  /* when a panel is open: scroll its content, block flythrough completely */
+  window.addEventListener('wheel', function(e){
+    if(!activePanel) return;
+    e.preventDefault();
+    var el = panelMap[activePanel];
+    if(!el) return;
+    var pinner = el.querySelector('.pinner');
+    if(pinner && pinner.scrollHeight > pinner.clientHeight + 1){
+      pinner.scrollTop += e.deltaY;
+    }
+  }, {passive:false});
+})();
+</script>
+</body>
+</html>
